@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendario interactivo (festivos y laborales)</title>
+  <style>
+    :root {
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#06b6d4;
+      --muted:#94a3b8;
+      --accent-2:#7c3aed;
+      --festivo:#3f0e0e;
+      --festivo-sel:#a32323;
+      --laboral:#0e1e3f;
+      --laboral-sel:#2655a3;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      color:#e6eef8;
+      background:linear-gradient(180deg,#071025 0%, #0b1220 100%);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      width:100%; max-width:920px;
+      border-radius:12px; padding:20px;
+      box-shadow:0 8px 30px rgba(2,6,23,0.6);
+    }
+
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+    h1{font-size:18px;margin:0;color:#fff}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer;transition:0.18s}
+    button:hover{border-color:rgba(255,255,255,0.2);color:#fff;transform:translateY(-1px)}
+    .month-year{font-weight:600;color:#fff}
+
+    select{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+    select:hover{border-color:rgba(255,255,255,0.2);color:#fff}
+
+    .calendar{display:grid;grid-template-columns:1fr 320px;gap:16px}
+    .grid{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px}
+    .weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;color:var(--muted);font-size:13px;padding:6px 4px}
+    .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:8px}
+
+    .day{
+      min-height:68px;border-radius:8px;padding:8px;cursor:pointer;position:relative;
+      background:transparent;border:1px solid transparent;transition:all 0.15s ease;
+    }
+    .day:hover{transform:translateY(-3px);filter:brightness(1.06)}
+    .day.other{opacity:0.35}
+    .day.today{outline:2px solid rgba(6,182,212,0.12);box-shadow:0 6px 18px rgba(6,182,212,0.06)}
+    .day .num{font-weight:600;color:#dbeafe;display:flex;align-items:center;gap:6px}
+
+    .day.festivo{background:var(--festivo)!important;}
+    .day.laboral{background:var(--laboral)!important;}
+
+    .day.selected:not(.festivo):not(.laboral){
+      background:linear-gradient(135deg,var(--accent),var(--accent-2))!important;
+      transform:scale(1.08);
+      border:2px solid rgba(255,255,255,0.35);
+      box-shadow:0 0 16px rgba(80,180,255,0.45);
+      z-index:2;
+    }
+
+    .day.festivo.selected{
+      background:var(--festivo-sel)!important;
+      transform:scale(1.08);
+      border:2px solid rgba(255,255,255,0.35);
+      box-shadow:0 0 22px rgba(255,70,70,0.6);
+      z-index:2;
+    }
+
+    .day.laboral.selected{
+      background:var(--laboral-sel)!important;
+      transform:scale(1.08);
+      border:2px solid rgba(255,255,255,0.35);
+      box-shadow:0 0 22px rgba(70,120,255,0.6);
+      z-index:2;
+    }
+
+    .events{position:absolute;left:8px;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
+    .event-pill{font-size:11px;padding:4px 6px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      padding:12px;border-radius:10px;color:#dbeafe;transition:background 0.28s, box-shadow 0.28s;
+    }
+    .panel.festivo{background:var(--festivo);box-shadow:0 0 18px rgba(255,70,70,0.25)}
+    .panel.laboral{background:var(--laboral);box-shadow:0 0 18px rgba(70,120,255,0.25)}
+    .panel h2{margin-top:0}
+    .events-list{max-height:360px;overflow:auto;padding-right:8px}
+    .event-row{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;margin-bottom:8px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type="text"], textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#e6eef8}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer;margin-top:8px}
+    .muted{color:var(--muted);font-size:13px}
+
+    .event-row button{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+      padding:4px 8px;
+      border-radius:6px;
+      cursor:pointer;
+      transition:0.18s;
+      font-size:12px;
+    }
+    .event-row button:hover{
+      border-color:rgba(255,255,255,0.2);
+      color:#fff;
+    }
+    .event-row .delete-btn{color:red}
+
+    @media (max-width:880px){.calendar{grid-template-columns:1fr;padding:0}.grid{order:2}.panel{order:1}}
+  </style>
+</head>
+<body>
+  <div class="card" role="application" aria-label="Calendario interactivo">
+    <div class="header">
+      <div class="title"><h1>Calendario interactivo</h1></div>
+      <div class="controls">
+        <button id="prevBtn" aria-label="Mes anterior">◀</button>
+        <div class="month-year" id="monthYear">—</div>
+        <button id="nextBtn" aria-label="Mes siguiente">▶</button>
+        <button id="todayBtn">Hoy</button>
+
+        <select id="countrySelect" title="Seleccionar país">
+          <option value="ES">🇪🇸 España</option>
+          <option value="MX">🇲🇽 México</option>
+          <option value="AR">🇦🇷 Argentina</option>
+          <option value="CL">🇨🇱 Chile</option>
+          <option value="CO">🇨🇴 Colombia</option>
+          <option value="US">🇺🇸 Estados Unidos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="calendar">
+      <div class="grid" id="grid">
+        <div class="weekdays">
+          <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+        </div>
+        <div class="days" id="days"></div>
+      </div>
+
+      <aside class="panel" id="panel">
+        <h2 id="panelTitle">Seleccione una fecha</h2>
+        <div class="muted" id="panelSub">Haz clic en un día para ver o añadir eventos.</div>
+
+        <div style="height:12px"></div>
+        <div>
+          <label for="eventText">Añadir evento rápido</label>
+          <input id="eventText" type="text" placeholder="Nombre del evento" />
+          <button class="btn-primary" id="addEventBtn">Añadir</button>
+        </div>
+
+        <div style="height:12px"></div>
+        <h3>Eventos</h3>
+        <div class="events-list" id="eventsList"></div>
+
+        <div style="height:8px"></div>
+        <div class="muted">Los eventos y festivos se guardan en localStorage.</div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // utilidades
+    function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+    function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+    function formatDateISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    // estado
+    const state = {
+      viewDate: new Date(),
+      selected: null,
+      events: {},    // { 'YYYY-MM-DD': [ {text, id} ] }
+      holidays: {},   // { 'YYYY-MM-DD': 'festivo' | 'laboral' }
+      country: 'ES',
+      loadedYears: {} // { countryCode: { '2024': true, '2025': true } }
+    };
+
+    // DOM refs
+    const monthYear = document.getElementById('monthYear');
+    const daysEl = document.getElementById('days');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const todayBtn = document.getElementById('todayBtn');
+    const countrySelect = document.getElementById('countrySelect');
+    const panel = document.getElementById('panel');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelSub = document.getElementById('panelSub');
+    const eventText = document.getElementById('eventText');
+    const addEventBtn = document.getElementById('addEventBtn');
+    const eventsList = document.getElementById('eventsList');
+
+    const STORAGE_KEY = 'cal_data_v_final';
+
+    function loadData(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          const obj = JSON.parse(raw);
+          state.events = obj.events || {};
+          state.holidays = obj.holidays || {};
+          state.country = obj.country || 'ES';
+          state.loadedYears = obj.loadedYears || {};
+        }
+      }catch(e){}
+      countrySelect.value = state.country;
+    }
+    function saveData(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ events: state.events, holidays: state.holidays, country: state.country, loadedYears: state.loadedYears }));
+    }
+
+    // carga festivos desde Nager.Date y los marca + crea eventos automáticos
+    async function loadPublicHolidays(year = new Date().getFullYear(), countryCode = 'ES') {
+      try {
+        // evita recargar el mismo año para el mismo país
+        state.loadedYears[countryCode] = state.loadedYears[countryCode] || {};
+        if(state.loadedYears[countryCode][year]) return;
+        const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
+        if (!res.ok) throw new Error('Error al obtener los festivos');
+        const holidays = await res.json();
+
+        holidays.forEach(h => {
+          const iso = h.date; // formato YYYY-MM-DD
+          state.holidays[iso] = 'festivo'; // marcar como festivo
+
+          // añadir como evento automático si no existe texto idéntico
+          if (!state.events[iso]) state.events[iso] = [];
+          if (!state.events[iso].some(e => e.text === h.localName)) {
+            state.events[iso].push({ text: h.localName, id: 'auto_' + h.date });
+          }
+        });
+
+        state.loadedYears[countryCode][year] = true;
+        saveData();
+        render();
+      } catch (err) {
+        console.error('Error cargando festivos:', err);
+      }
+    }
+
+    // render
+    function render(){
+      const y = state.viewDate.getFullYear();
+      const m = state.viewDate.getMonth();
+      const first = startOfMonth(state.viewDate);
+      const last = endOfMonth(state.viewDate);
+
+      const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      monthYear.textContent = `${monthNames[m]} ${y}`;
+
+      daysEl.innerHTML = '';
+
+      const offset = (first.getDay() + 6) % 7; // lunes as col 0
+      const prevLast = new Date(y, m, 0).getDate();
+
+      // prev month tail
+      for(let i = offset-1; i >= 0; i--){
+        const d = prevLast - i;
+        daysEl.appendChild(renderDay(new Date(y, m-1, d), true));
+      }
+
+      // current month
+      for(let d = 1; d <= last.getDate(); d++){
+        daysEl.appendChild(renderDay(new Date(y, m, d), false));
+      }
+
+      // next month padding
+      const total = daysEl.childElementCount;
+      const need = (total % 7 === 0) ? 0 : 7 - (total % 7);
+      for(let i = 1; i <= need; i++){
+        daysEl.appendChild(renderDay(new Date(y, m+1, i), true));
+      }
+
+      // update panel if something selected
+      if(state.selected) showPanelFor(state.selected);
+    }
+
+    function renderDay(date, other){
+      const iso = formatDateISO(date);
+      const el = document.createElement('button');
+      el.className = 'day' + (other ? ' other' : '');
+      el.setAttribute('data-date', iso);
+      el.setAttribute('aria-label', `Día ${date.toDateString()}`);
+
+      // número y icono
+      const num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = date.getDate();
+      const status = state.holidays[iso];
+      if(status === 'festivo') { num.innerHTML += ' 🎉'; el.classList.add('festivo'); }
+      if(status === 'laboral') { num.innerHTML += ' 💼'; el.classList.add('laboral'); }
+
+      el.appendChild(num);
+
+      // event pills
+      if(state.events[iso] && state.events[iso].length){
+        const evs = document.createElement('div'); evs.className = 'events';
+        state.events[iso].slice(0,3).forEach(ev => {
+          const p = document.createElement('div'); p.className = 'event-pill'; p.textContent = ev.text;
+          evs.appendChild(p);
+        });
+        el.appendChild(evs);
+      }
+
+      // today & selected
+      const nowIso = formatDateISO(new Date());
+      if(nowIso === iso) el.classList.add('today');
+      if(state.selected && formatDateISO(state.selected) === iso) el.classList.add('selected');
+
+      // click behaviors
+      el.addEventListener('click', (e) => {
+        if(e.ctrlKey){ toggleDayStatus(iso); return; } // Ctrl+click toggles status
+        state.selected = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        if(other) state.viewDate = new Date(state.selected.getFullYear(), state.selected.getMonth(), 1);
+        render();
+      });
+
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        toggleDayStatus(iso); // right click toggles status
+      });
+
+      return el;
+    }
+
+    function toggleDayStatus(iso){
+      const cur = state.holidays[iso];
+      if(cur === 'festivo') state.holidays[iso] = 'laboral';
+      else if(cur === 'laboral') delete state.holidays[iso];
+      else state.holidays[iso] = 'festivo';
+      saveData();
+      render();
+    }
+
+    // panel
+    function showPanelFor(date){
+      const iso = formatDateISO(date);
+      panelTitle.textContent = date.toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+      const st = state.holidays[iso];
+      panelSub.textContent = iso + (st ? ` (${st})` : '');
+
+      panel.classList.remove('festivo','laboral');
+      if(st === 'festivo') panel.classList.add('festivo');
+      if(st === 'laboral') panel.classList.add('laboral');
+
+      // events list
+      eventsList.innerHTML = '';
+      const list = state.events[iso] || [];
+      if(list.length === 0){
+        eventsList.innerHTML = '<div class="muted">No hay eventos.</div>';
+      } else {
+        list.forEach(ev => {
+          const row = document.createElement('div'); 
+          row.className = 'event-row';
+          
+          // Contenedor principal con flexbox
+          const content = document.createElement('div');
+          content.style.display = 'flex';
+          content.style.flexDirection = 'column';
+          content.style.gap = '8px';
+          
+          // 1. Vista de lectura
+          const readView = document.createElement('div');
+          readView.style.display = 'flex';
+          readView.style.justifyContent = 'space-between';
+          readView.style.alignItems = 'center';
+          readView.id = `read-view-${ev.id}`;
+          
+          // Texto y ID
+          readView.innerHTML = `<div><strong>${escapeHtml(ev.text)}</strong><div class="muted" style="font-size:12px">ID: ${ev.id}</div></div>`;
+          
+          // Botones de acción
+          const actionBtns = document.createElement('div');
+          actionBtns.innerHTML = `<button class="edit-btn" data-id="${ev.id}">Editar</button> <button class="delete-btn" data-id="${ev.id}">Eliminar</button>`;
+          actionBtns.querySelector('.delete-btn').addEventListener('click', () => removeEvent(iso, ev.id));
+          actionBtns.querySelector('.edit-btn').addEventListener('click', () => {
+              document.getElementById(`read-view-${ev.id}`).style.display = 'none';
+              document.getElementById(`edit-view-${ev.id}`).style.display = 'block';
+          });
+          readView.appendChild(actionBtns);
+          content.appendChild(readView);
+
+          // 2. Vista de edición (oculta por defecto)
+          const editView = document.createElement('div');
+          editView.id = `edit-view-${ev.id}`;
+          editView.style.display = 'none';
+          
+          const editTextarea = document.createElement('textarea');
+          editTextarea.value = ev.text;
+          editTextarea.style.minHeight = '60px';
+          editView.appendChild(editTextarea);
+          
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'btn-primary';
+          saveBtn.textContent = 'Guardar';
+          saveBtn.style.marginRight = '8px';
+          saveBtn.addEventListener('click', () => {
+              updateEvent(iso, ev.id, editTextarea.value);
+          });
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.style.background = 'transparent';
+          cancelBtn.style.border = '1px solid rgba(255,255,255,0.04)';
+          cancelBtn.style.color = 'var(--muted)';
+          cancelBtn.textContent = 'Cancelar';
+          cancelBtn.addEventListener('click', () => {
+              // Restaurar valores y vistas
+              editTextarea.value = ev.text; 
+              document.getElementById(`read-view-${ev.id}`).style.display = 'flex';
+              document.getElementById(`edit-view-${ev.id}`).style.display = 'none';
+          });
+          
+          editView.appendChild(saveBtn);
+          editView.appendChild(cancelBtn);
+          content.appendChild(editView);
+
+          row.appendChild(content);
+          eventsList.appendChild(row);
+        });
+      }
+    }
+
+    // events manipulation
+    function updateEvent(iso, id, newText){
+        if(!state.events[iso]) return;
+        const text = newText.trim();
+        if(!text) return alert('El texto del evento no puede estar vacío.');
+
+        // Encontrar el evento y actualizar su texto
+        const eventIndex = state.events[iso].findIndex(e => e.id === id);
+        if(eventIndex !== -1){
+            state.events[iso][eventIndex].text = text;
+            saveData();
+            render(); // Se necesita renderizar para actualizar las píldoras si el texto cambia
+            showPanelFor(state.selected); // Actualizar el panel para reflejar el cambio
+        }
+    }
+
+    function addEvent(text){
+      if(!state.selected) return alert('Selecciona primero una fecha');
+      const iso = formatDateISO(state.selected);
+      const id = 'ev_' + Date.now().toString(36);
+      const item = { text: text.trim(), id };
+      if(!state.events[iso]) state.events[iso] = [];
+      state.events[iso].push(item);
+      saveData();
+      render();
+      showPanelFor(state.selected);
+    }
+
+    function removeEvent(iso, id){
+      if(!state.events[iso]) return;
+      state.events[iso] = state.events[iso].filter(e => e.id !== id);
+      if(state.events[iso].length === 0) delete state.events[iso];
+      saveData();
+      render();
+      showPanelFor(state.selected);
+    }
+
+    // UI actions (prev/next/today)
+    prevBtn.addEventListener('click', ()=>{
+      const prevYear = state.viewDate.getFullYear();
+      state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth()-1, 1);
+      render();
+      // si cambia de año, cargar festivos de nuevo para el año mostrado
+      if(state.viewDate.getFullYear() !== prevYear){
+        loadPublicHolidays(state.viewDate.getFullYear(), state.country);
+      }
+    });
+    nextBtn.addEventListener('click', ()=>{
+      const prevYear = state.viewDate.getFullYear();
+      state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth()+1, 1);
+      render();
+      if(state.viewDate.getFullYear() !== prevYear){
+        loadPublicHolidays(state.viewDate.getFullYear(), state.country);
+      }
+    });
+    todayBtn.addEventListener('click', ()=>{ state.viewDate = new Date(); state.selected = new Date(); render(); });
+    addEventBtn.addEventListener('click', ()=>{ const txt = eventText.value; if(!txt.trim()) return; addEvent(txt); eventText.value = ''; });
+    eventText.addEventListener('keyup', (e)=>{ if(e.key === 'Enter') addEventBtn.click(); });
+
+    countrySelect.addEventListener('change', (e)=>{
+      state.country = e.target.value;
+      saveData();
+      // asegurarse de cargar festivos para el año mostrado del país elegido
+      loadPublicHolidays(state.viewDate.getFullYear(), state.country);
+    });
+
+    // init
+    loadData();
+    state.selected = new Date();
+    state.viewDate = new Date(state.selected.getFullYear(), state.selected.getMonth(), 1);
+    render();
+    // cargar festivos del año actual y país guardado
+    loadPublicHolidays(state.viewDate.getFullYear(), state.country);
+  </script>
+</body>
+</html>

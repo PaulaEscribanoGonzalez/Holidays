@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Festividades Guardadas</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="list.css">
+</head>
+
+<body>
+
+  <!-- === HEADER === -->
+  <header>
+    <div id="top-header">
+      <div class="topnav">
+        <a href="listado.html" class="logo">
+          <img src="holidayIcon.png" alt="Logo HolidayWeb"> HolidayWeb
+        </a>
+        <a class="active" href="index.html">Inicio</a>
+        <form class="search-bar" role="search" aria-label="Buscar festividad">
+          <input type="text" placeholder="Buscar festividad...">
+        </form>
+        <a href="list.html" aria-label="Ver guardados"><img src="saveIcon.png" alt="Guardados"></a>
+        <a href="calendar.html" aria-label="Ver calendario"><img src="calendarIcon.png" alt="Calendario"></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="saved-container">
+    <h1>Festividades Guardadas</h1>
+
+    <div class="saved-list">
+
+      <!-- CARD 1 -->
+      <div class="saved-card">
+        <button class="save-btn" aria-label="Guardar">
+          <span class="material-icons">bookmark_border</span>
+        </button>
+
+        <div class="image-container">
+          <img src="https://www.daysoftheyear.com/wp-content/uploads/boston-cream-pie-day1-scaled.jpg" alt="Boston Cream Pie Day">
+        </div>
+
+        <div class="saved-info">
+          <div class="saved-header">
+            <h3>Boston Cream Pie Day</h3>
+            <div class="saved-badge">
+              <span>23 Oct</span>
+              <img class="flag" src="https://flagcdn.com/us.svg" alt="EE.UU.">
+            </div>
+          </div>
+          <p class="saved-description">
+            Celebra el delicioso postre que se ha convertido en un ícono estadounidense, con crema pastelera, bizcocho y glaseado de chocolate.
+          </p>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="saved-card">
+        <button class="save-btn" aria-label="Guardar">
+          <span class="material-icons">bookmark_border</span>
+        </button>
+
+        <div class="image-container">
+          <img src="https://www.daysoftheyear.com/wp-content/uploads/food-day1-scaled.jpg" alt="Food Day">
+        </div>
+
+        <div class="saved-info">
+          <div class="saved-header">
+            <h3>Food Day</h3>
+            <div class="saved-badge">
+              <span>24 Oct</span>
+              <img class="flag" src="https://flagcdn.com/us.svg" alt="EE.UU.">
+            </div>
+          </div>
+          <p class="saved-description">
+            Un día para reflexionar sobre la importancia de los alimentos saludables y sostenibles. ¡Come bien, vive mejor!
+          </p>
+        </div>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="saved-card">
+        <button class="save-btn" aria-label="Guardar">
+          <span class="material-icons">bookmark_border</span>
+        </button>
+
+        <div class="image-container">
+          <img src="https://www.daysoftheyear.com/wp-content/uploads/earth-day1-scaled.jpg" alt="Earth Day">
+        </div>
+
+        <div class="saved-info">
+          <div class="saved-header">
+            <h3>Earth Day</h3>
+            <div class="saved-badge">
+              <span>22 Abr</span>
+              <img class="flag" src="https://flagcdn.com/us.svg" alt="EE.UU.">
+            </div>
+          </div>
+          <p class="saved-description">
+            Celebra la belleza del planeta y promueve acciones para proteger el medio ambiente y luchar contra el cambio climático.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="API.js"></script>
+  <script src="list.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.querySelector(".saved-list");
+      const saved = JSON.parse(localStorage.getItem("savedHolidays")) || [];
+
+      if (saved.length === 0) {
+        container.innerHTML = "<p style='text-align:center;color:#888;'>No tienes festividades guardadas aún.</p>";
+        return;
+      }
+
+      // Generar cards dinámicamente con los nombres correctos
+      container.innerHTML = saved.map(h => `
+        <div class="saved-card">
+          <button class="save-btn remove-btn" aria-label="Eliminar de guardados">
+            <span class="material-icons">delete</span>
+          </button>
+
+          <div class="image-container">
+            <img src="${h.image}" alt="${h.title}">
+          </div>
+
+          <div class="saved-info">
+            <div class="saved-header">
+              <h3>${h.title}</h3>
+              <div class="saved-badge">
+                <span>${h.date}</span>
+                <img class="flag" src="https://flagcdn.com/us.svg" alt="EE.UU.">
+              </div>
+            </div>
+            <p class="saved-description">${h.description}</p>
+          </div>
+        </div>
+      `).join("");
+
+      // Permitir eliminar festividades guardadas
+      document.querySelectorAll(".remove-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.preventDefault();
+          const card = btn.closest(".saved-card");
+          const title = card.querySelector("h3")?.innerText;
+          const updated = saved.filter(h => h.title !== title);
+          localStorage.setItem("savedHolidays", JSON.stringify(updated));
+
+          // Animación y eliminación visual
+          card.classList.add("fade-out");
+          setTimeout(() => {
+            card.remove();
+            if (updated.length === 0) {
+              container.innerHTML = "<p style='text-align:center;color:#888;'>No tienes festividades guardadas aún.</p>";
+            }
+          }, 300);
+        });
+      });
+    });
+    </script>
+
+</body>
+</html>

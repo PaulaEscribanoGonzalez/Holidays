@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Descubre qué se celebra hoy con HolidayWeb: festividades internacionales, curiosas y únicas cada día.">
+  <title>HolidayWeb - Celebraciones de Hoy</title>
+
+  <link rel="stylesheet" href="index.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+  <!-- === HEADER === -->
+  <header>
+    <div id="top-header">
+      <div class="topnav">
+        <a href="listado.html" class="logo">
+          <img src="holidayIcon.png" alt="Logo HolidayWeb"> HolidayWeb
+        </a>
+        <a class="active" href="index.html">Inicio</a>
+        <form class="search-bar" role="search" aria-label="Buscar festividad">
+          <input type="text" placeholder="Buscar festividad...">
+        </form>
+        <a href="list.html" aria-label="Ver guardados"><img src="saveIcon.png" alt="Guardados"></a>
+        <a href="calendar.html" aria-label="Ver calendario"><img src="calendarIcon.png" alt="Calendario"></a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- === SLIDER === -->
+    <section class="slideshow-container" aria-label="Festividades destacadas">
+      <!-- Slides dinámicos se insertarán aquí desde index.js -->
+      <a class="prev" onclick="plusSlides(-1)" aria-label="Slide anterior">❮</a>
+      <a class="next" onclick="plusSlides(1)" aria-label="Siguiente slide">❯</a>
+    </section>
+
+    <!-- === NAV DÍAS === -->
+    <section class="day-nav">
+      <button id="prev-day">⟨ Ayer</button>
+      <div id="current-day"></div>
+      <button id="next-day">Mañana ⟩</button>
+    </section>
+
+    <!-- === FESTIVIDADES DESTACADAS === -->
+    <section id="featured-holidays">
+      <h2>🎉 Destacadas del día</h2>
+      <div class="featured-grid" id="featured-grid">
+        <!-- Tarjetas dinámicas se insertarán aquí desde index.js -->
+      </div>
+    </section>
+
+    <!-- === POSTS DEL DÍA === -->
+    <section id="day-posts">
+      <h2>Celebraciones de hoy</h2>
+      <div class="posts-grid" id="posts-grid"></div>
+    </section>
+  </main>
+
+  <script src="API.js"></script>
+  <script type="module" src="index.js"></script>
+</body>
+</html>
